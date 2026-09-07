@@ -6,7 +6,7 @@ from pywinauto.keyboard import send_keys
 def run_mstsc_automation():
     """
     Automates Remote Desktop Connection (MSTSC) using pywinauto:
-    1. Opens Windows Search (Win+S), types MSTSC, and presses Enter.
+    1. Launches mstsc.exe directly (bypassing Windows Search to avoid ambiguous element conflicts).
     2. Connects to the Remote Desktop Connection window and clicks 'Connect'.
     3. Handles error dialogs: clicks 'OK', waits 20 seconds, and clicks 'Connect' again.
     """
@@ -14,18 +14,18 @@ def run_mstsc_automation():
     print("Starting MSTSC PyWinAuto Automation Script")
     print("--------------------------------------------------")
 
-    # Step 1: Open Win+Search and open MSTSC
-    print("\n[Step 1] Opening Windows Search and typing MSTSC...")
-    send_keys('{VK_LWIN}s')
-    time.sleep(1.5)
-    send_keys('mstsc{ENTER}')
-    time.sleep(3)
-
-    # Step 2: Connect to Remote Desktop Connection window
-    print("[Step 2] Locating Remote Desktop Connection window...")
+    # Step 1 & 2: Launch MSTSC directly and target its process
+    print("\n[Step 1 & 2] Launching Remote Desktop Connection...")
     try:
-        app = Application(backend="win32").connect(title_re=".*Remote Desktop Connection.*", timeout=10)
-        dlg = app.window(title_re=".*Remote Desktop Connection.*")
+        try:
+            # Connect to an existing MSTSC instance if already open
+            app = Application(backend="win32").connect(path="mstsc.exe", timeout=2)
+        except Exception:
+            # Otherwise, launch mstsc.exe directly
+            app = Application(backend="win32").start("mstsc.exe")
+
+        # Target the dialog by its specific Win32 dialog class (#32770) to prevent ambiguous element matching
+        dlg = app.window(class_name="#32770", title_re=".*Remote Desktop Connection.*")
         dlg.wait('ready', timeout=10)
         dlg.set_focus()
 
@@ -99,4 +99,3 @@ def run_mstsc_automation():
 
 if __name__ == "__main__":
     run_mstsc_automation()
-      
